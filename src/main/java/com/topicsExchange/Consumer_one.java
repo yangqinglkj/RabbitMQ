@@ -1,4 +1,4 @@
-package com.publicshSubscribe;
+package com.topicsExchange;
 
 import com.rabbitmq.client.*;
 import com.utils.ConnectionUtil;
@@ -7,31 +7,28 @@ import java.io.IOException;
 
 /**
  * @author yangqing
- * @since 2020/5/13  17:25
- * 订阅模式
- * 消费者
+ * @since 2020/5/18  16:30
+ * routing 消费者
  **/
 public class Consumer_one {
-    private static final String QUEUE_NAME="test_queue_fanout_email";
-    private static final String CHANGE_NAME="test_exchange_fanout";
+    private static final String QUEUE_NAME = "test_topics_queue";
+    private static final String CHANGE_NAME = "test_exchange_topic";
 
-    public static void main(String[] args)throws Exception {
+    public static void main(String[] args) throws Exception {
         //获取连接
         Connection connection = ConnectionUtil.getConnection();
-        //从连接中创建通道
+        //创建通道
         final Channel channel = connection.createChannel();
         //声明队列
-       channel.queueDeclare(QUEUE_NAME,false,false,false,null);
+        channel.queueDeclare(QUEUE_NAME,true,false,false,null);
 
-        //绑定队列到交换机
-        channel.queueBind(QUEUE_NAME,CHANGE_NAME, "");
+        //绑定交换机
+        channel.queueBind(QUEUE_NAME,CHANGE_NAME,"goods.add");
 
         //同一时刻服务器只会发一条消息给消费者
         channel.basicQos(1);
 
-        //定义队列的消费者
-        com.rabbitmq.client.Consumer consumer = new DefaultConsumer(channel) {
-            //获取监听到的消息
+        DefaultConsumer consumer = new DefaultConsumer(channel){
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
                 String msgString = new String(body, "UTF-8");
@@ -46,6 +43,8 @@ public class Consumer_one {
                 }
             }
         };
+        //监听队列
+        //autoAck true代表自动返回完成状态  false代表手动返回完成状态
         channel.basicConsume(QUEUE_NAME,false,consumer);
     }
 }
